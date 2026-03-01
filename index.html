@@ -3,22 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>StudySlice MVP 🍕</title>
-
+<title>StudySlice 🍕</title>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
 <style>
-:root {
-  --primary:#6c5ce7;
-  --bg:#f5f7fa;
+:root{
+  --primary:#6C5CE7;
+  --break:#00B894;
+  --bg:#F5F7FA;
   --card:white;
   --text:#2d3436;
-}
-
-body.dark{
-  --bg:#1e1e2f;
-  --card:#2c2c3e;
-  --text:white;
 }
 
 body{
@@ -27,55 +21,81 @@ body{
   background:var(--bg);
   display:flex;
   justify-content:center;
-  align-items:center;
-  min-height:100vh;
-  transition:.3s;
 }
 
-.container{
-  width:95%;
+.app{
+  width:100%;
   max-width:420px;
+  min-height:100vh;
   background:var(--card);
-  padding:25px;
-  border-radius:20px;
-  box-shadow:0 10px 30px rgba(0,0,0,.1);
-  text-align:center;
+  display:flex;
+  flex-direction:column;
+  position:relative;
 }
 
-h1{margin-top:0;color:var(--primary)}
+header{
+  padding:20px;
+  text-align:center;
+  font-weight:bold;
+  font-size:1.3rem;
+  color:var(--primary);
+}
+
+.screen{
+  flex:1;
+  padding:20px;
+  display:none;
+}
+
+.active{
+  display:block;
+}
 
 .timer{
   font-size:3rem;
+  text-align:center;
+  margin:20px 0;
   font-weight:800;
-  margin:15px 0;
-  color:var(--text);
 }
-
-button{
-  padding:10px 18px;
-  border:none;
-  border-radius:10px;
-  cursor:pointer;
-  font-weight:bold;
-  margin:5px;
-}
-
-.primary{background:var(--primary);color:white}
-.secondary{background:#dfe6e9}
 
 .progress{
-  height:8px;
+  height:10px;
   background:#eee;
-  border-radius:10px;
+  border-radius:20px;
   overflow:hidden;
-  margin:10px 0;
 }
 
 .progress-bar{
   height:100%;
-  background:var(--primary);
   width:100%;
+  background:var(--primary);
   transition:1s linear;
+}
+
+button{
+  padding:12px;
+  border:none;
+  border-radius:12px;
+  font-weight:bold;
+  margin-top:15px;
+  width:100%;
+  cursor:pointer;
+}
+
+.primary{
+  background:var(--primary);
+  color:white;
+}
+
+.secondary{
+  background:#dfe6e9;
+}
+
+.stats-box{
+  display:flex;
+  justify-content:space-between;
+  margin-top:15px;
+  font-weight:bold;
 }
 
 .task{
@@ -83,172 +103,172 @@ button{
   padding:10px;
   border-radius:10px;
   margin:8px 0;
+  display:flex;
+  justify-content:space-between;
+}
+
+.bottom-nav{
+  display:flex;
+  justify-content:space-around;
+  padding:10px;
+  border-top:1px solid #eee;
+  position:sticky;
+  bottom:0;
+  background:white;
+}
+
+.nav-btn{
+  background:none;
+  border:none;
+  font-size:1.2rem;
   cursor:pointer;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-
-.task.completed{
-  text-decoration:line-through;
-  opacity:.6;
-}
-
-.stats{
-  display:flex;
-  justify-content:space-between;
-  font-size:.9rem;
-  margin-top:10px;
 }
 </style>
 </head>
 
 <body>
 
-<div class="container">
-<h1>StudySlice 🍕</h1>
+<div class="app">
 
+<header>StudySlice 🍕</header>
+
+<!-- Focus Screen -->
+<div id="focus" class="screen active">
 <div class="progress"><div class="progress-bar" id="bar"></div></div>
 <div class="timer" id="time">25:00</div>
 
-<button class="primary" onclick="toggleTimer()" id="startBtn">ابدأ</button>
-<button class="secondary" onclick="resetTimer()">🔄</button>
-<button class="secondary" onclick="toggleDark()">🌙</button>
+<button class="primary" onclick="toggleTimer()" id="startBtn">ابدأ التركيز</button>
 
-<div class="stats">
-<div>🍕 Points: <span id="points">0</span></div>
+<div class="stats-box">
+<div>🍕 XP: <span id="xp">0</span></div>
 <div>🔥 Streak: <span id="streak">0</span></div>
 </div>
 
-<hr>
-
-<div>
-<input id="taskInput" placeholder="مهمتك الحالية..." style="padding:8px;border-radius:8px;border:1px solid #ccc;width:70%">
-<button class="primary" onclick="addTask()">+</button>
+<div style="margin-top:15px" id="pizzaBar"></div>
 </div>
 
+<!-- Tasks Screen -->
+<div id="tasks" class="screen">
+<input id="taskInput" placeholder="مهمتك..." style="width:100%;padding:10px;border-radius:10px;border:1px solid #ccc">
+<button class="primary" onclick="addTask()">إضافة</button>
 <div id="taskList"></div>
+</div>
+
+<!-- Stats Screen -->
+<div id="stats" class="screen">
+<h3>📊 إحصائياتك</h3>
+<p>إجمالي الجلسات: <span id="totalSessions">0</span></p>
+<p>إجمالي وقت التركيز: <span id="totalTime">0</span> دقيقة</p>
+</div>
+
+<!-- Profile Screen -->
+<div id="profile" class="screen">
+<h3>👤 Player</h3>
+<p>Level: <span id="level">1</span></p>
+<button class="secondary" onclick="resetAll()">إعادة تعيين البيانات</button>
+</div>
+
+<div class="bottom-nav">
+<button class="nav-btn" onclick="showScreen('focus')">🏠</button>
+<button class="nav-btn" onclick="showScreen('tasks')">🎯</button>
+<button class="nav-btn" onclick="showScreen('stats')">📊</button>
+<button class="nav-btn" onclick="showScreen('profile')">👤</button>
+</div>
 
 </div>
 
 <script>
-let focusTime = 25*60;
-let shortBreak = 5*60;
-let longBreak = 15*60;
+let focusTime=25*60;
+let timeLeft=focusTime;
+let timer=null;
 
-let timeLeft = focusTime;
-let totalTime = focusTime;
-let timer = null;
-let sessionCount = 0;
-let isBreak = false;
+let xp=localStorage.getItem("xp")||0;
+let streak=localStorage.getItem("streak")||0;
+let sessions=localStorage.getItem("sessions")||0;
+let totalMinutes=localStorage.getItem("minutes")||0;
 
-let points = localStorage.getItem("points") || 0;
-let streak = localStorage.getItem("streak") || 0;
-
-document.getElementById("points").textContent = points;
-document.getElementById("streak").textContent = streak;
+document.getElementById("xp").textContent=xp;
+document.getElementById("streak").textContent=streak;
+document.getElementById("totalSessions").textContent=sessions;
+document.getElementById("totalTime").textContent=totalMinutes;
+updatePizza();
 
 function updateDisplay(){
-  let m = Math.floor(timeLeft/60);
-  let s = timeLeft%60;
-  document.getElementById("time").textContent =
-    `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-
-  document.getElementById("bar").style.width =
-    (timeLeft/totalTime)*100+"%";
+let m=Math.floor(timeLeft/60);
+let s=timeLeft%60;
+document.getElementById("time").textContent=`${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+document.getElementById("bar").style.width=(timeLeft/focusTime)*100+"%";
 }
 
 function toggleTimer(){
-  if(timer==null){
-    timer = setInterval(()=>{
-      if(timeLeft>0){
-        timeLeft--;
-        updateDisplay();
-      }else{
-        clearInterval(timer);
-        timer=null;
-        sessionComplete();
-      }
-    },1000);
-    document.getElementById("startBtn").textContent="إيقاف";
-  }else{
-    clearInterval(timer);
-    timer=null;
-    document.getElementById("startBtn").textContent="استئناف";
-  }
+if(timer==null){
+timer=setInterval(()=>{
+if(timeLeft>0){
+timeLeft--;
+updateDisplay();
+}else{
+clearInterval(timer);
+timer=null;
+completeSession();
+}
+},1000);
+document.getElementById("startBtn").textContent="إيقاف";
+}else{
+clearInterval(timer);
+timer=null;
+document.getElementById("startBtn").textContent="استئناف";
+}
 }
 
-function sessionComplete(){
-  confetti({particleCount:120,spread:70});
-  
-  if(!isBreak){
-    points++;
-    streak++;
-    sessionCount++;
-    localStorage.setItem("points",points);
-    localStorage.setItem("streak",streak);
-    
-    if(sessionCount%4==0){
-      timeLeft = longBreak;
-    }else{
-      timeLeft = shortBreak;
-    }
-    isBreak=true;
-  }else{
-    timeLeft = focusTime;
-    isBreak=false;
-  }
+function completeSession(){
+confetti({particleCount:120,spread:70});
+xp=parseInt(xp)+50;
+streak=parseInt(streak)+1;
+sessions=parseInt(sessions)+1;
+totalMinutes=parseInt(totalMinutes)+25;
 
-  totalTime = timeLeft;
-  updateDisplay();
-  document.getElementById("points").textContent=points;
-  document.getElementById("streak").textContent=streak;
+localStorage.setItem("xp",xp);
+localStorage.setItem("streak",streak);
+localStorage.setItem("sessions",sessions);
+localStorage.setItem("minutes",totalMinutes);
+
+document.getElementById("xp").textContent=xp;
+document.getElementById("streak").textContent=streak;
+document.getElementById("totalSessions").textContent=sessions;
+document.getElementById("totalTime").textContent=totalMinutes;
+
+updatePizza();
+timeLeft=focusTime;
+updateDisplay();
 }
 
-function resetTimer(){
-  clearInterval(timer);
-  timer=null;
-  timeLeft=focusTime;
-  totalTime=focusTime;
-  isBreak=false;
-  updateDisplay();
-  document.getElementById("startBtn").textContent="ابدأ";
+function updatePizza(){
+let slices=Math.floor(xp/50)%8;
+let html="";
+for(let i=0;i<8;i++){
+html+= i<slices ? "🍕 " : "▫️ ";
+}
+document.getElementById("pizzaBar").innerHTML=html;
 }
 
 function addTask(){
-  let input=document.getElementById("taskInput");
-  if(!input.value) return;
-
-  let div=document.createElement("div");
-  div.className="task";
-  div.innerHTML=`<span>${input.value}</span>
-  <span onclick="event.stopPropagation(); this.parentElement.remove(); saveTasks()">🗑️</span>`;
-  
-  div.onclick=function(){
-    this.classList.toggle("completed");
-    confetti({particleCount:40,scalar:.7});
-    saveTasks();
-  }
-
-  document.getElementById("taskList").prepend(div);
-  input.value="";
-  saveTasks();
+let input=document.getElementById("taskInput");
+if(!input.value) return;
+let div=document.createElement("div");
+div.className="task";
+div.innerHTML=`<span>${input.value}</span><span onclick="this.parentElement.remove()">🗑️</span>`;
+document.getElementById("taskList").prepend(div);
+input.value="";
 }
 
-function saveTasks(){
-  localStorage.setItem("tasks",
-    document.getElementById("taskList").innerHTML);
+function showScreen(id){
+document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+document.getElementById(id).classList.add("active");
 }
 
-window.onload=function(){
-  let saved=localStorage.getItem("tasks");
-  if(saved){
-    document.getElementById("taskList").innerHTML=saved;
-  }
-}
-
-function toggleDark(){
-  document.body.classList.toggle("dark");
+function resetAll(){
+localStorage.clear();
+location.reload();
 }
 </script>
 
