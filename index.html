@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudySlice MVP 🍕</title>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+<style>
+:root {
+  --primary:#6c5ce7;
+  --bg:#f5f7fa;
+  --card:white;
+  --text:#2d3436;
+}
+
+body.dark{
+  --bg:#1e1e2f;
+  --card:#2c2c3e;
+  --text:white;
+}
+
+body{
+  margin:0;
+  font-family:'Cairo',sans-serif;
+  background:var(--bg);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:100vh;
+  transition:.3s;
+}
+
+.container{
+  width:95%;
+  max-width:420px;
+  background:var(--card);
+  padding:25px;
+  border-radius:20px;
+  box-shadow:0 10px 30px rgba(0,0,0,.1);
+  text-align:center;
+}
+
+h1{margin-top:0;color:var(--primary)}
+
+.timer{
+  font-size:3rem;
+  font-weight:800;
+  margin:15px 0;
+  color:var(--text);
+}
+
+button{
+  padding:10px 18px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:bold;
+  margin:5px;
+}
+
+.primary{background:var(--primary);color:white}
+.secondary{background:#dfe6e9}
+
+.progress{
+  height:8px;
+  background:#eee;
+  border-radius:10px;
+  overflow:hidden;
+  margin:10px 0;
+}
+
+.progress-bar{
+  height:100%;
+  background:var(--primary);
+  width:100%;
+  transition:1s linear;
+}
+
+.task{
+  background:#f1f2f6;
+  padding:10px;
+  border-radius:10px;
+  margin:8px 0;
+  cursor:pointer;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.task.completed{
+  text-decoration:line-through;
+  opacity:.6;
+}
+
+.stats{
+  display:flex;
+  justify-content:space-between;
+  font-size:.9rem;
+  margin-top:10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h1>StudySlice 🍕</h1>
+
+<div class="progress"><div class="progress-bar" id="bar"></div></div>
+<div class="timer" id="time">25:00</div>
+
+<button class="primary" onclick="toggleTimer()" id="startBtn">ابدأ</button>
+<button class="secondary" onclick="resetTimer()">🔄</button>
+<button class="secondary" onclick="toggleDark()">🌙</button>
+
+<div class="stats">
+<div>🍕 Points: <span id="points">0</span></div>
+<div>🔥 Streak: <span id="streak">0</span></div>
+</div>
+
+<hr>
+
+<div>
+<input id="taskInput" placeholder="مهمتك الحالية..." style="padding:8px;border-radius:8px;border:1px solid #ccc;width:70%">
+<button class="primary" onclick="addTask()">+</button>
+</div>
+
+<div id="taskList"></div>
+
+</div>
+
+<script>
+let focusTime = 25*60;
+let shortBreak = 5*60;
+let longBreak = 15*60;
+
+let timeLeft = focusTime;
+let totalTime = focusTime;
+let timer = null;
+let sessionCount = 0;
+let isBreak = false;
+
+let points = localStorage.getItem("points") || 0;
+let streak = localStorage.getItem("streak") || 0;
+
+document.getElementById("points").textContent = points;
+document.getElementById("streak").textContent = streak;
+
+function updateDisplay(){
+  let m = Math.floor(timeLeft/60);
+  let s = timeLeft%60;
+  document.getElementById("time").textContent =
+    `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+
+  document.getElementById("bar").style.width =
+    (timeLeft/totalTime)*100+"%";
+}
+
+function toggleTimer(){
+  if(timer==null){
+    timer = setInterval(()=>{
+      if(timeLeft>0){
+        timeLeft--;
+        updateDisplay();
+      }else{
+        clearInterval(timer);
+        timer=null;
+        sessionComplete();
+      }
+    },1000);
+    document.getElementById("startBtn").textContent="إيقاف";
+  }else{
+    clearInterval(timer);
+    timer=null;
+    document.getElementById("startBtn").textContent="استئناف";
+  }
+}
+
+function sessionComplete(){
+  confetti({particleCount:120,spread:70});
+  
+  if(!isBreak){
+    points++;
+    streak++;
+    sessionCount++;
+    localStorage.setItem("points",points);
+    localStorage.setItem("streak",streak);
+    
+    if(sessionCount%4==0){
+      timeLeft = longBreak;
+    }else{
+      timeLeft = shortBreak;
+    }
+    isBreak=true;
+  }else{
+    timeLeft = focusTime;
+    isBreak=false;
+  }
+
+  totalTime = timeLeft;
+  updateDisplay();
+  document.getElementById("points").textContent=points;
+  document.getElementById("streak").textContent=streak;
+}
+
+function resetTimer(){
+  clearInterval(timer);
+  timer=null;
+  timeLeft=focusTime;
+  totalTime=focusTime;
+  isBreak=false;
+  updateDisplay();
+  document.getElementById("startBtn").textContent="ابدأ";
+}
+
+function addTask(){
+  let input=document.getElementById("taskInput");
+  if(!input.value) return;
+
+  let div=document.createElement("div");
+  div.className="task";
+  div.innerHTML=`<span>${input.value}</span>
+  <span onclick="event.stopPropagation(); this.parentElement.remove(); saveTasks()">🗑️</span>`;
+  
+  div.onclick=function(){
+    this.classList.toggle("completed");
+    confetti({particleCount:40,scalar:.7});
+    saveTasks();
+  }
+
+  document.getElementById("taskList").prepend(div);
+  input.value="";
+  saveTasks();
+}
+
+function saveTasks(){
+  localStorage.setItem("tasks",
+    document.getElementById("taskList").innerHTML);
+}
+
+window.onload=function(){
+  let saved=localStorage.getItem("tasks");
+  if(saved){
+    document.getElementById("taskList").innerHTML=saved;
+  }
+}
+
+function toggleDark(){
+  document.body.classList.toggle("dark");
+}
+</script>
+
+</body>
+</html>
