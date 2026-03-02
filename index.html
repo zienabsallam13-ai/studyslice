@@ -9,10 +9,8 @@
 <style>
 :root{
   --primary:#6C5CE7;
-  --break:#00B894;
   --bg:#F5F7FA;
   --card:white;
-  --text:#2d3436;
 }
 
 body{
@@ -30,7 +28,6 @@ body{
   background:var(--card);
   display:flex;
   flex-direction:column;
-  position:relative;
 }
 
 header{
@@ -47,9 +44,7 @@ header{
   display:none;
 }
 
-.active{
-  display:block;
-}
+.active{display:block;}
 
 .timer{
   font-size:3rem;
@@ -67,9 +62,9 @@ header{
 
 .progress-bar{
   height:100%;
-  width:100%;
+  width:0%;
   background:var(--primary);
-  transition:1s linear;
+  transition:0.5s;
 }
 
 button{
@@ -82,14 +77,8 @@ button{
   cursor:pointer;
 }
 
-.primary{
-  background:var(--primary);
-  color:white;
-}
-
-.secondary{
-  background:#dfe6e9;
-}
+.primary{background:var(--primary);color:white;}
+.secondary{background:#dfe6e9;}
 
 .stats-box{
   display:flex;
@@ -107,13 +96,19 @@ button{
   justify-content:space-between;
 }
 
+.badge{
+  background:#ffeaa7;
+  padding:8px;
+  border-radius:8px;
+  margin:5px 0;
+  font-size:0.9rem;
+}
+
 .bottom-nav{
   display:flex;
   justify-content:space-around;
   padding:10px;
   border-top:1px solid #eee;
-  position:sticky;
-  bottom:0;
   background:white;
 }
 
@@ -132,7 +127,7 @@ button{
 
 <header>StudySlice 🍕</header>
 
-<!-- Focus Screen -->
+<!-- Focus -->
 <div id="focus" class="screen active">
 <div class="progress"><div class="progress-bar" id="bar"></div></div>
 <div class="timer" id="time">25:00</div>
@@ -147,24 +142,28 @@ button{
 <div style="margin-top:15px" id="pizzaBar"></div>
 </div>
 
-<!-- Tasks Screen -->
+<!-- Tasks -->
 <div id="tasks" class="screen">
 <input id="taskInput" placeholder="مهمتك..." style="width:100%;padding:10px;border-radius:10px;border:1px solid #ccc">
 <button class="primary" onclick="addTask()">إضافة</button>
 <div id="taskList"></div>
 </div>
 
-<!-- Stats Screen -->
+<!-- Stats -->
 <div id="stats" class="screen">
 <h3>📊 إحصائياتك</h3>
 <p>إجمالي الجلسات: <span id="totalSessions">0</span></p>
 <p>إجمالي وقت التركيز: <span id="totalTime">0</span> دقيقة</p>
+<div id="badgesContainer"></div>
 </div>
 
-<!-- Profile Screen -->
+<!-- Profile -->
 <div id="profile" class="screen">
 <h3>👤 Player</h3>
 <p>Level: <span id="level">1</span></p>
+<div class="progress">
+  <div class="progress-bar" id="levelBar"></div>
+</div>
 <button class="secondary" onclick="resetAll()">إعادة تعيين البيانات</button>
 </div>
 
@@ -182,16 +181,41 @@ let focusTime=25*60;
 let timeLeft=focusTime;
 let timer=null;
 
-let xp=localStorage.getItem("xp")||0;
-let streak=localStorage.getItem("streak")||0;
-let sessions=localStorage.getItem("sessions")||0;
-let totalMinutes=localStorage.getItem("minutes")||0;
+let xp=parseInt(localStorage.getItem("xp"))||0;
+let level=parseInt(localStorage.getItem("level"))||1;
+let streak=parseInt(localStorage.getItem("streak"))||0;
+let sessions=parseInt(localStorage.getItem("sessions"))||0;
+let totalMinutes=parseInt(localStorage.getItem("minutes"))||0;
+let badges=JSON.parse(localStorage.getItem("badges"))||[];
 
-document.getElementById("xp").textContent=xp;
-document.getElementById("streak").textContent=streak;
-document.getElementById("totalSessions").textContent=sessions;
-document.getElementById("totalTime").textContent=totalMinutes;
-updatePizza();
+updateUI();
+
+function calculateRequiredXP(lvl){
+return lvl*lvl*150;
+}
+
+function updateLevel(){
+let required=calculateRequiredXP(level);
+
+while(xp>=required){
+xp-=required;
+level++;
+confetti({particleCount:200,spread:100});
+alert("🎉 Level Up! وصلت للمستوى "+level);
+required=calculateRequiredXP(level);
+}
+
+localStorage.setItem("xp",xp);
+localStorage.setItem("level",level);
+
+updateLevelBar();
+}
+
+function updateLevelBar(){
+let required=calculateRequiredXP(level);
+let percent=(xp/required)*100;
+document.getElementById("levelBar").style.width=percent+"%";
+}
 
 function updateDisplay(){
 let m=Math.floor(timeLeft/60);
@@ -222,24 +246,22 @@ document.getElementById("startBtn").textContent="استئناف";
 
 function completeSession(){
 confetti({particleCount:120,spread:70});
-xp=parseInt(xp)+50;
-streak=parseInt(streak)+1;
-sessions=parseInt(sessions)+1;
-totalMinutes=parseInt(totalMinutes)+25;
+xp+=50;
+streak++;
+sessions++;
+totalMinutes+=25;
 
-localStorage.setItem("xp",xp);
+checkBadges();
+updateLevel();
+
 localStorage.setItem("streak",streak);
 localStorage.setItem("sessions",sessions);
 localStorage.setItem("minutes",totalMinutes);
 
-document.getElementById("xp").textContent=xp;
-document.getElementById("streak").textContent=streak;
-document.getElementById("totalSessions").textContent=sessions;
-document.getElementById("totalTime").textContent=totalMinutes;
-
-updatePizza();
 timeLeft=focusTime;
 updateDisplay();
+updateUI();
+updatePizza();
 }
 
 function updatePizza(){
@@ -249,6 +271,47 @@ for(let i=0;i<8;i++){
 html+= i<slices ? "🍕 " : "▫️ ";
 }
 document.getElementById("pizzaBar").innerHTML=html;
+}
+
+function checkBadges(){
+if(sessions>=5 && !badges.includes("5sessions")){
+badges.push("5sessions");
+alert("🏅 Badge Unlocked: 5 Sessions!");
+}
+if(streak>=7 && !badges.includes("7streak")){
+badges.push("7streak");
+alert("🔥 Badge Unlocked: 7 Day Streak!");
+}
+if(level>=5 && !badges.includes("level5")){
+badges.push("level5");
+alert("👑 Badge Unlocked: Level 5!");
+}
+localStorage.setItem("badges",JSON.stringify(badges));
+renderBadges();
+}
+
+function renderBadges(){
+let container=document.getElementById("badgesContainer");
+container.innerHTML="";
+badges.forEach(b=>{
+let div=document.createElement("div");
+div.className="badge";
+if(b=="5sessions") div.textContent="🏅 5 Focus Sessions";
+if(b=="7streak") div.textContent="🔥 7 Day Streak";
+if(b=="level5") div.textContent="👑 Level 5 Achiever";
+container.appendChild(div);
+});
+}
+
+function updateUI(){
+document.getElementById("xp").textContent=xp;
+document.getElementById("streak").textContent=streak;
+document.getElementById("totalSessions").textContent=sessions;
+document.getElementById("totalTime").textContent=totalMinutes;
+document.getElementById("level").textContent=level;
+updateLevelBar();
+renderBadges();
+updatePizza();
 }
 
 function addTask(){
@@ -270,6 +333,8 @@ function resetAll(){
 localStorage.clear();
 location.reload();
 }
+
+updateDisplay();
 </script>
 
 </body>
